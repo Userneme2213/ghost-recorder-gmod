@@ -5,16 +5,8 @@ if SERVER then
     local recordTarget = nil
     local ghostEntity = nil
     local playbackIndex = 1
-    local ghostColor = Color(0, 255, 100, 200)
 
-    concommand.Add("ghost_color", function(ply, cmd, args)
-        local r = tonumber(args[1]) or 0
-        local g = tonumber(args[2]) or 255
-        local b = tonumber(args[3]) or 100
-        ghostColor = Color(math.Clamp(r, 0, 255), math.Clamp(g, 0, 255), math.Clamp(b, 0, 255), 200)
-        if IsValid(ply) then ply:ChatPrint("[Ghost] Цвет изменен.") end
-    end)
-
+    
     concommand.Add("ghost_record", function(ply, cmd, args)
         if isPlaying then
             ply:ChatPrint("[Ghost] Нельзя начинать запись во время воспроизведения!")
@@ -23,7 +15,7 @@ if SERVER then
 
         if not isRecording then
             isRecording = true
-            recordedData = {}
+            recordedData = {} 
             recordTarget = ply
             ply:ChatPrint("[Ghost] Запись пошла... Двигайтесь!")
         else
@@ -32,6 +24,7 @@ if SERVER then
         end
     end)
 
+    
     concommand.Add("ghost_play", function(ply, cmd, args)
         if isRecording then
             ply:ChatPrint("[Ghost] Сначала остановите запись командой ghost_record!")
@@ -43,6 +36,7 @@ if SERVER then
             return
         end
 
+        -- Если уже играет, то выключаем
         if isPlaying then
             isPlaying = false
             if IsValid(ghostEntity) then ghostEntity:Remove() end
@@ -50,6 +44,7 @@ if SERVER then
             return
         end
 
+        
         local firstFrame = recordedData[1]
         ghostEntity = ents.Create("prop_dynamic")
         if not IsValid(ghostEntity) then return end
@@ -59,16 +54,17 @@ if SERVER then
         ghostEntity:SetAngles(firstFrame.ang)
         ghostEntity:Spawn()
 
-        ghostEntity:SetMaterial("models/wireframe")
+        
         ghostEntity:SetRenderMode(RENDERMODE_TRANSALPHA)
-        ghostEntity:SetColor(ghostColor)
-        ghostEntity:SetCollisionGroup(COLLISION_GROUP_WORLD)
+        ghostEntity:SetColor(Color(0, 150, 255, 120)) -
+        ghostEntity:SetCollisionGroup(COLLISION_GROUP_WORLD) -
 
         playbackIndex = 1
         isPlaying = true
         ply:ChatPrint("[Ghost] Воспроизведение началось...")
     end)
 
+    
     concommand.Add("ghost_clear", function(ply, cmd, args)
         recordedData = {}
         isRecording = false
@@ -77,7 +73,9 @@ if SERVER then
         ply:ChatPrint("[Ghost] Все записи удалены.")
     end)
 
+    
     hook.Add("Tick", "GhostRecorderTick", function()
+        
         if isRecording and IsValid(recordTarget) then
             table.insert(recordedData, {
                 pos = recordTarget:GetPos(),
@@ -88,6 +86,7 @@ if SERVER then
             })
         end
 
+        
         if isPlaying then
             if not IsValid(ghostEntity) then
                 isPlaying = false
@@ -96,19 +95,21 @@ if SERVER then
 
             local frame = recordedData[playbackIndex]
             if frame then
+                -- 
                 ghostEntity:SetPos(frame.pos)
                 ghostEntity:SetAngles(frame.ang)
                 
                 if ghostEntity:GetModel() ~= frame.model then
                     ghostEntity:SetModel(frame.model)
-                    ghostEntity:SetMaterial("models/wireframe")
                 end
 
+                
                 ghostEntity:SetSequence(frame.sequence)
                 ghostEntity:SetCycle(frame.cycle)
 
                 playbackIndex = playbackIndex + 1
             else
+               
                 isPlaying = false
                 if IsValid(ghostEntity) then ghostEntity:Remove() end
                 if IsValid(recordTarget) then
@@ -118,6 +119,7 @@ if SERVER then
         end
     end)
 
+    
     hook.Add("PlayerDisconnect", "GhostCleanUp", function(ply)
         if recordTarget == ply then
             isRecording = false
